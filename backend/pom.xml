@@ -15,6 +15,11 @@
         <version>3.2.0</version>
     </parent>
 
+    <!-- ✅ ADD THIS -->
+    <properties>
+        <java.version>17</java.version>
+    </properties>
+
     <dependencies>
 
         <!-- Web -->
@@ -45,16 +50,19 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
 
     </dependencies>
+
+    <!-- ✅ KEEP THIS -->
     <build>
-    <plugins>
-        <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-        </plugin>
-    </plugins>
-</build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
