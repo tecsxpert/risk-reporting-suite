@@ -157,3 +157,101 @@ Add headers such as:
 X-Frame-Options
 X-Content-Type-Options
 Content-Security-Policy
+
+
+## Advanced Threat Modeling 
+
+1. Model Hallucination (AI Risk)
+
+Attack Example:
+AI generates incorrect or fabricated risk reports.
+
+Impact:
+
+Misleading business decisions
+Loss of trust
+
+Mitigation:
+
+Add validation layer
+Use confidence scoring
+Cross-check outputs
+
+
+2. Data Poisoning
+
+Attack Example:
+Malicious data sent to influence AI outputs.
+
+Impact:
+
+Biased or incorrect predictions
+
+Mitigation:
+
+Input validation
+Data filtering
+Monitor anomalies
+
+
+ 3. Prompt Leakage
+
+Attack Example:
+User tries to extract system prompts.
+
+Impact:
+
+Exposure of internal logic
+Security bypass
+
+Mitigation:
+
+Hide system prompts
+Restrict AI responses
+Use prompt templates
+
+
+ 4. API Key Exposure
+
+Attack Example:
+Hardcoded API key leaked in code.
+
+Impact:
+
+Unauthorized API usage
+Financial loss
+
+Mitigation:
+
+Use environment variables
+Never expose keys in frontend
+
+
+ 5. Insecure Direct Object Reference (IDOR)
+
+Attack Example:
+User accesses another user’s data via ID manipulation.
+
+Impact:
+
+Data breach
+
+Mitigation:
+
+Validate user permissions
+Use secure identifiers
+
+
+ 6. Dependency Vulnerabilities
+
+Attack Example:
+Using outdated libraries with known exploits.
+
+Impact:
+
+System compromise
+
+Mitigation:
+
+Regular updates
+Use dependency scanners
