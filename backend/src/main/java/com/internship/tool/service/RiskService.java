@@ -3,10 +3,12 @@ package com.internship.tool.service;
 import com.internship.tool.entity.Risk;
 import com.internship.tool.repository.RiskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringBuilder;
 
 @Service
 public class RiskService {
@@ -19,10 +21,20 @@ public class RiskService {
         if (risk.getTitle() == null || risk.getTitle().isEmpty()) {
             throw new RuntimeException("Title cannot be empty");
         }
+        risk.setDeleted(false);
         return riskRepository.save(risk);
     }
 
-    // READ ALL
+    // READ ALL with pagination
+    public Page<Risk> getAllRisks(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return riskRepository.findByDeletedFalse(pageable);
+    }
+
+    // READ ALL (simple list for internal use)
     public List<Risk> getAllRisks() {
         return riskRepository.findAll();
     }
@@ -44,12 +56,20 @@ public class RiskService {
         return riskRepository.save(existing);
     }
 
-    // DELETE
+    // SOFT DELETE
     public void deleteRisk(Long id) {
-        riskRepository.deleteById(id);
+        Risk risk = getRiskById(id);
+        risk.setDeleted(true);
+        riskRepository.save(risk);
     }
 
-    // SEARCH by title
+    // SEARCH with pagination
+    public Page<Risk> searchRisks(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return riskRepository.findByTitleContainingIgnoreCaseAndDeletedFalse(query, pageable);
+    }
+
+    // SEARCH simple list
     public List<Risk> searchRisks(String query) {
         return riskRepository.findByTitleContainingIgnoreCase(query);
     }
@@ -66,5 +86,23 @@ public class RiskService {
         stats.put("byStatus", riskRepository.countByStatus());
         stats.put("byCategory", riskRepository.countByCategory());
         return stats;
+    }
+
+    // EXPORT to CSV
+    public String exportToCsv() {
+        List<Risk> risks = riskRepository.findAll();
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Title,Description,Category,Status,Score,Deleted,CreatedAt\n");
+        for (Risk r : risks) {
+            csv.append(r.getId()).append(",")
+               .append(r.getTitle()).append(",")
+               .append(r.getDescription() != null ? r.getDescription() : "").append(",")
+               .append(r.getCategory() != null ? r.getCategory() : "").append(",")
+               .append(r.getStatus() != null ? r.getStatus() : "").append(",")
+               .append(r.getScore() != null ? r.getScore() : "").append(",")
+               .append(r.getDeleted()).append(",")
+               .append(r.getCreatedAt() != null ? r.getCreatedAt() : "").append("\n");
+        }
+        return csv.toString();
     }
 }

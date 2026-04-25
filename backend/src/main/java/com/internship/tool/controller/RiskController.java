@@ -3,6 +3,8 @@ package com.internship.tool.controller;
 import com.internship.tool.entity.Risk;
 import com.internship.tool.service.RiskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,8 +21,12 @@ public class RiskController {
 
     @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
-    public ResponseEntity<List<Risk>> getAllRisks() {
-        return ResponseEntity.ok(riskService.getAllRisks());
+    public ResponseEntity<Page<Risk>> getAllRisks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir) {
+        return ResponseEntity.ok(riskService.getAllRisks(page, size, sortBy, sortDir));
     }
 
     @GetMapping("/{id}")
@@ -52,8 +58,11 @@ public class RiskController {
 
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
-    public ResponseEntity<List<Risk>> searchRisks(@RequestParam String q) {
-        return ResponseEntity.ok(riskService.searchRisks(q));
+    public ResponseEntity<Page<Risk>> searchRisks(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(riskService.searchRisks(q, page, size));
     }
 
     @GetMapping("/filter")
@@ -66,5 +75,15 @@ public class RiskController {
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<?> getStats() {
         return ResponseEntity.ok(riskService.getStats());
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public ResponseEntity<String> exportCsv() {
+        String csv = riskService.exportToCsv();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=risks.csv")
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv")
+                .body(csv);
     }
 }
