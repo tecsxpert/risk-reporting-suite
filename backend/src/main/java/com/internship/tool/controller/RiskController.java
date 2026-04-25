@@ -5,6 +5,7 @@ import com.internship.tool.service.RiskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -16,53 +17,53 @@ public class RiskController {
     @Autowired
     private RiskService riskService;
 
-    // GET all risks
     @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<List<Risk>> getAllRisks() {
         return ResponseEntity.ok(riskService.getAllRisks());
     }
 
-    // GET risk by ID
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<Risk> getRiskById(@PathVariable Long id) {
         return ResponseEntity.ok(riskService.getRiskById(id));
     }
 
-    // POST create risk
     @PostMapping("/create")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<Risk> createRisk(@RequestBody Risk risk) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(riskService.createRisk(risk));
     }
 
-    // PUT update risk
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<Risk> updateRisk(@PathVariable Long id,
                                            @RequestBody Risk risk) {
         return ResponseEntity.ok(riskService.updateRisk(id, risk));
     }
 
-    // DELETE risk
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteRisk(@PathVariable Long id) {
         riskService.deleteRisk(id);
         return ResponseEntity.noContent().build();
     }
 
-    // GET search by title
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<List<Risk>> searchRisks(@RequestParam String q) {
         return ResponseEntity.ok(riskService.searchRisks(q));
     }
 
-    // GET filter by status
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<List<Risk>> filterByStatus(@RequestParam String status) {
         return ResponseEntity.ok(riskService.filterByStatus(status));
     }
 
-    // GET stats for dashboard
     @GetMapping("/stats")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','VIEWER')")
     public ResponseEntity<?> getStats() {
         return ResponseEntity.ok(riskService.getStats());
     }
