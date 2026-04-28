@@ -1,59 +1,22 @@
 package com.internship.tool.entity;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-@Entity
-@Table(name = "risks")
-@EntityListeners(AuditingEntityListener.class)
 public class Risk {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String title;
-
-    @Column(length = 1000)
     private String description;
-
-    @Column(nullable = false)
-    private String status;   // OPEN, CLOSED, IN_PROGRESS
-
-    @Column(nullable = false)
-    private String priority; // HIGH, MEDIUM, LOW
-
-    @Column(nullable = false)
+    private String status;
+    private String priority;
     private Integer score;
 
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
-
-    // ================= Constructors =================
-
-    public Risk() {}
-
-    public Risk(String title, String description, String status, String priority, Integer score) {
-        this.title = title;
-        this.description = description;
-        this.status = status;
-        this.priority = priority;
-        this.score = score;
-    }
-
-    // ================= Getters & Setters =================
+    // Getter & Setter
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTitle() {
@@ -94,13 +57,5 @@ public class Risk {
 
     public void setScore(Integer score) {
         this.score = score;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
     }
 }
