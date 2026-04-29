@@ -1,7 +1,7 @@
 package com.internship.tool.service;
 
 import com.internship.tool.entity.Risk;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.internship.tool.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -13,9 +13,6 @@ public class RiskService {
     private List<Risk> riskList = new ArrayList<>();
     private Long idCounter = 1L;
 
-    @Autowired
-    private EmailService emailService;
-
     public List<Risk> getAllRisks() {
         return riskList;
     }
@@ -23,9 +20,6 @@ public class RiskService {
     public Risk addRisk(Risk risk) {
         risk.setId(idCounter++);
         riskList.add(risk);
-
-        emailService.sendEmail(risk, "New Risk Created");
-
         return risk;
     }
 
@@ -33,7 +27,9 @@ public class RiskService {
         return riskList.stream()
                 .filter(r -> r.getId().equals(id))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Risk not found with id: " + id)
+                );
     }
 
     public String deleteRisk(Long id) {
