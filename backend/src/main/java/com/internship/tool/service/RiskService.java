@@ -1,6 +1,7 @@
 package com.internship.tool.service;
 
 import com.internship.tool.entity.Risk;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -10,15 +11,21 @@ import java.util.List;
 public class RiskService {
 
     private List<Risk> riskList = new ArrayList<>();
-    private Long idCounter = 1L;   // 🔥 important
+    private Long idCounter = 1L;
+
+    @Autowired
+    private EmailService emailService;
 
     public List<Risk> getAllRisks() {
         return riskList;
     }
 
     public Risk addRisk(Risk risk) {
-        risk.setId(idCounter++);   // 🔥 assign ID
+        risk.setId(idCounter++);
         riskList.add(risk);
+
+        emailService.sendEmail(risk, "New Risk Created");
+
         return risk;
     }
 

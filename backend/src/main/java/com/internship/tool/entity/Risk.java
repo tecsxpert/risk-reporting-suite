@@ -1,5 +1,7 @@
 package com.internship.tool.entity;
 
+import java.time.LocalDate;
+
 public class Risk {
 
     private Long id;
@@ -8,8 +10,7 @@ public class Risk {
     private String status;
     private String priority;
     private Integer score;
-
-    // 🔥 getters & setters
+    private LocalDate dueDate;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -28,4 +29,7 @@ public class Risk {
 
     public Integer getScore() { return score; }
     public void setScore(Integer score) { this.score = score; }
+
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 }
