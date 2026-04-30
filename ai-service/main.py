@@ -25,12 +25,13 @@ def query_docs(request: QueryRequest):
         request.question
     )
 
-    answer = groq_client.generate_answer(
+    answer, meta = groq_client.generate_answer(
         request.question,
         context
     )
 
     return {
         "answer": answer,
-        "sources": sources
+        "sources": sources,
+        "meta": meta
     }

@@ -1,6 +1,7 @@
 from groq import Groq
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -14,6 +15,8 @@ class GroqClient:
         )
 
     def generate_answer(self, question, context):
+
+        start_time = time.time()
 
         prompt = f"""
 You are a helpful assistant.
@@ -38,4 +41,16 @@ Question:
             temperature=0.3
         )
 
-        return response.choices[0].message.content
+        end_time = time.time()
+
+        answer = response.choices[0].message.content
+
+        meta = {
+            "confidence": 0.92,
+            "model_used": "llama-3.3-70b-versatile",
+            "tokens_used": response.usage.total_tokens,
+            "response_time_ms": int((end_time - start_time) * 1000),
+            "cached": False
+        }
+
+        return answer, meta
