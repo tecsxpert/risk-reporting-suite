@@ -1,41 +1,36 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+
+from services.query_service import retrieve_context
 from services.groq_client import GroqClient
-import json
 
 app = FastAPI()
-client = GroqClient()
 
-class TextRequest(BaseModel):
-    text: str
+groq_client = GroqClient()
 
-@app.post("/categorise")
-def categorise(req: TextRequest):
-    prompt = f"""
-Classify the text into:
-- Technology
-- Finance
-- Health
-- Education
-- Other
 
-Return ONLY JSON:
-{{
-  "category": "",
-  "confidence": 0.0,
-  "reasoning": ""
-}}
+class QueryRequest(BaseModel):
+    question: str
 
-Text: {req.text}
-"""
 
-    result = client.generate_response(prompt)
+@app.get("/")
+def home():
+    return {"message": "API running"}
 
-    try:
-        return json.loads(result["response"])
-    except:
-        return {
-            "category": "Other",
-            "confidence": 0.5,
-            "reasoning": result["response"]
-        }
+
+@app.post("/query")
+def query_docs(request: QueryRequest):
+
+    context, sources = retrieve_context(
+        request.question
+    )
+
+    answer = groq_client.generate_answer(
+        request.question,
+        context
+    )
+
+    return {
+        "answer": answer,
+        "sources": sources
+    }
