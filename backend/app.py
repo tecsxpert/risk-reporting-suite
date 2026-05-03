@@ -4,10 +4,20 @@ from flask_talisman import Talisman
 import bleach
 import re
 import os
-import logging
+import logging 
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 app = Flask(__name__)
 CORS(app)
+
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["30 per minute"]
+)
 
 # ✅ Day 8 — Security headers via flask-talisman
 Talisman(
@@ -102,6 +112,7 @@ def health():
 
 
 @app.route('/analyze', methods=['POST'])
+@limiter.limit("30 per minute")
 def analyze():
     try:
         data = request.get_json()
@@ -156,6 +167,7 @@ def analyze():
     except Exception as e:
         logger.error(f"Error in analyze endpoint: {type(e).__name__}")
         return jsonify({"error": str(e)}), 500
+    
 
 
 @app.errorhandler(404)
