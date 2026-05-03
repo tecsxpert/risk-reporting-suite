@@ -4,15 +4,22 @@ from flask_talisman import Talisman
 import bleach
 import re
 import os
+import logging
 
 app = Flask(__name__)
 CORS(app)
 
+# ✅ Day 8 — Security headers via flask-talisman
 Talisman(
     app,
     content_security_policy=False,
     force_https=False
 )
+
+# ✅ Day 9 — Safe logger (never logs raw user input)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 
 def sanitize_input(user_input):
@@ -40,6 +47,22 @@ def detect_prompt_injection(user_input):
         if re.search(pattern, user_input.lower()):
             return True
     return False
+
+
+def detect_pii(user_input):
+    """✅ Day 9 — Detect common PII patterns in input"""
+    pii_patterns = {
+        "email": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        "phone": r"\b\d{10}\b|\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b",
+        "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
+        "credit_card": r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",
+        "ip_address": r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"
+    }
+    found = []
+    for pii_type, pattern in pii_patterns.items():
+        if re.search(pattern, user_input):
+            found.append(pii_type)
+    return found
 
 
 def calculate_risk(user_input):
@@ -88,6 +111,9 @@ def analyze():
 
         user_input = data["input"]
 
+        # ✅ Day 9 — Log only length, never raw content
+        logger.info(f"Analyze request received. Input length: {len(user_input)}")
+
         # Length check
         if len(user_input) > 500:
             return jsonify({"error": "Input too long. Maximum 500 characters allowed."}), 400
@@ -100,14 +126,22 @@ def analyze():
         if detect_sql_injection(user_input):
             return jsonify({"error": "SQL injection pattern detected"}), 400
 
-      
+        # ✅ Day 8 — Prompt injection check
         if detect_prompt_injection(user_input):
             return jsonify({"error": "Prompt injection pattern detected"}), 400
+
+        # ✅ Day 9 — PII check
+        pii_found = detect_pii(user_input)
+        if pii_found:
+            logger.warning(f"PII detected in input: {pii_found} (content not logged)")
+            return jsonify({
+                "error": f"Input contains sensitive personal information: {', '.join(pii_found)}. Please remove PII before submitting."
+            }), 400
 
         # Sanitize
         clean_input = sanitize_input(user_input)
 
-        # Risk calculation
+        # Risk calculation on sanitized input
         risk_level = calculate_risk(clean_input)
 
         response = {
@@ -120,6 +154,7 @@ def analyze():
         return jsonify(response), 200
 
     except Exception as e:
+        logger.error(f"Error in analyze endpoint: {type(e).__name__}")
         return jsonify({"error": str(e)}), 500
 
 
