@@ -4,25 +4,29 @@ import com.internship.tool.entity.Risk;
 import com.internship.tool.service.RiskService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
 import java.util.List;
 
 @Component
 public class RiskScheduler {
 
-    private final RiskService riskService;
+    @Autowired
+    private RiskRepository riskRepository;
 
-    public RiskScheduler(RiskService riskService) {
-        this.riskService = riskService;
+    @Scheduled(cron = "0 0 8 * * ?")
+    public void dailyOverdueReminder() {
+        List<Risk> risks = riskRepository.findByStatus("OPEN");
+        System.out.println("[SCHEDULER] Daily reminder - Open risks: " + risks.size());
     }
 
-    @Scheduled(fixedRate = 60000) // runs every 1 minute
-    public void checkOverdueRisks() {
+    @Scheduled(cron = "0 0 9 * * ?")
+    public void weeklyDeadlineAlert() {
+        List<Risk> risks = riskRepository.findByStatus("IN_PROGRESS");
+        System.out.println("[SCHEDULER] Weekly alert - In progress: " + risks.size());
+    }
 
-        List<Risk> risks = riskService.getAllRisks();
-
-        for (Risk risk : risks) {
-            System.out.println("Checking risk ID: " + risk.getId());
-        }
+    @Scheduled(cron = "0 0 7 * * MON")
+    public void weeklySummary() {
+        long total = riskRepository.count();
+        System.out.println("[SCHEDULER] Weekly summary - Total risks: " + total);
     }
 }
