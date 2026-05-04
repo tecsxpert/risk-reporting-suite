@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package com.internship.tool.config;
 
 import io.jsonwebtoken.*;
@@ -54,3 +55,5 @@ public class JwtUtil {
         }
     }
 }
+=======
+>>>>>>> f1d37cf (Day 12 completed - Swagger API documentation added)

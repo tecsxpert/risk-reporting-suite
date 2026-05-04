@@ -13,17 +13,21 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.startsWith("/auth") ||
+               path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.contains("swagger") ||
+               path.contains("api-docs");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                   HttpServletResponse response,
-                                   FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-
-        if (path.startsWith("/auth")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         String header = request.getHeader("Authorization");
 
