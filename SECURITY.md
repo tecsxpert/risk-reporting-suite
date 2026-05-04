@@ -255,3 +255,12 @@ Mitigation:
 
 Regular updates
 Use dependency scanners
+
+### Manual Security Testing 
+| Vulnerability | Fix Applied | Verified By |
+|---|---|---|
+| Missing X-Content-Type-Options | flask-talisman | Code review |
+| Missing X-Frame-Options | flask-talisman | Code review |
+| Prompt Injection | detect_prompt_injection() | Manual testing in Postman |
+
+Status: All Medium+ findings resolved.
