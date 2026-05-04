@@ -264,3 +264,38 @@ Use dependency scanners
 | Prompt Injection | detect_prompt_injection() | Manual testing in Postman |
 
 Status: All Medium+ findings resolved.
+
+## Day 11 — Full Security Scan (Manual OWASP Testing)
+
+### Critical Findings — All Fixed ✅
+| Finding | Severity | Test | Result | Fix |
+|---|---|---|---|---|
+| XSS Attack | Critical | `<script>alert('xss')</script>` | 400 Blocked | bleach sanitization |
+| SQL Injection | Critical | `select * from users` | 400 Blocked | detect_sql_injection() |
+| Prompt Injection | High | `ignore previous instructions` | 400 Blocked | detect_prompt_injection() |
+| PII Exposure | High | `john@example.com` | 400 Blocked | detect_pii() |
+| Missing Security Headers | High | GET / Headers | nosniff, DENY | flask-talisman |
+
+### Medium Findings — Accepted/Planned
+| Finding | Severity | Status | Plan |
+|---|---|---|---|
+| Rate Limiting | Medium | ✅ Implemented | 30 req/min via flask-limiter |
+| HTTPS not enforced | Medium | Accepted for dev | Will enable in production |
+| No authentication on Flask | Medium | Accepted | JWT handled by Java backend |
+
+### OWASP Top 10 Coverage
+| OWASP Risk | Status |
+|---|---|
+| A01 Broken Access Control | ✅ Mitigated — JWT on Java backend |
+| A02 Cryptographic Failures | ✅ Mitigated — No sensitive data stored |
+| A03 Injection | ✅ Mitigated — SQL + Prompt injection detection |
+| A04 Insecure Design | ✅ Mitigated — Input validation on all endpoints |
+| A05 Security Misconfiguration | ✅ Mitigated — Security headers via flask-talisman |
+| A06 Vulnerable Components | ✅ Mitigated — All packages pinned in requirements.txt |
+| A07 Auth Failures | ✅ Mitigated — Rate limiting via flask-limiter |
+| A08 Software Integrity | ✅ Mitigated — No untrusted code execution |
+| A09 Logging Failures | ✅ Mitigated — Safe logging, no PII in logs |
+| A10 SSRF | ✅ Mitigated — No external URL fetching |
+
+### Scan Date: [Today's Date]
+### Result: Zero Critical/High findings remaining
