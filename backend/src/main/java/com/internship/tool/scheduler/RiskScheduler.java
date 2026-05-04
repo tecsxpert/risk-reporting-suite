@@ -1,8 +1,7 @@
 package com.internship.tool.scheduler;
 
 import com.internship.tool.entity.Risk;
-import com.internship.tool.repository.RiskRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.internship.tool.service.RiskService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.util.List;

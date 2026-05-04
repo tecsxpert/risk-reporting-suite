@@ -1,10 +1,9 @@
 package com.internship.tool.service;
 
 import com.internship.tool.entity.Risk;
-import com.internship.tool.exception.ResourceNotFoundException;
+import com.internship.tool.repository.RiskRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,30 +11,27 @@ import java.util.Map;
 @Service
 public class RiskService {
 
-    private List<Risk> riskList = new ArrayList<>();
-    private Long idCounter = 1L;
+    private final RiskRepository repository;
+
+    public RiskService(RiskRepository repository) {
+        this.repository = repository;
+    }
 
     public List<Risk> getAllRisks() {
-        return riskList;
+        return repository.findAll();
     }
 
     public Risk addRisk(Risk risk) {
-        risk.setId(idCounter++);
-        riskList.add(risk);
-        return risk;
+        return repository.save(risk);
     }
 
     public Risk getRiskById(Long id) {
-        return riskList.stream()
-                .filter(r -> r.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Risk not found with id: " + id)
-                );
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Risk not found"));
     }
 
     public String deleteRisk(Long id) {
-        riskList.removeIf(r -> r.getId().equals(id));
-        return "Risk deleted successfully";
+        repository.deleteById(id);
+        return "Deleted";
     }
 }

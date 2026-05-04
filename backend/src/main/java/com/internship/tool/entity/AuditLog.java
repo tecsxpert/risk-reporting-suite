@@ -2,6 +2,7 @@ package com.internship.tool.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "audit_log")
