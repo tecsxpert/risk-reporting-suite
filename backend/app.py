@@ -19,14 +19,25 @@ limiter = Limiter(
     default_limits=["30 per minute"]
 )
 
-# ✅ Day 8 — Security headers via flask-talisman
 Talisman(
     app,
-    content_security_policy=False,
-    force_https=False
+    force_https=False,  # Keep False for local dev
+    strict_transport_security=False,
+    content_security_policy={
+        'default-src': "'self'",
+        'script-src': "'self'",
+        'style-src': "'self'",
+        'img-src': "'self' data:",
+        'connect-src': "'self'"
+    },
+    referrer_policy='strict-origin-when-cross-origin',
+    permissions_policy={
+        'geolocation': '()',
+        'microphone': '()',
+        'camera': '()'
+    }
 )
 
-# ✅ Day 9 — Safe logger (never logs raw user input)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
