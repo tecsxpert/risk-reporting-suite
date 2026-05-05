@@ -1,4 +1,7 @@
 import time
+import uuid
+import threading
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -20,6 +23,11 @@ app = FastAPI()
 
 groq_client = GroqClient()
 
+# -------------------------------------------------
+# In-memory job store
+# -------------------------------------------------
+jobs = {}
+
 
 # -------------------------------------------------
 # Middleware: Track API response time
@@ -39,10 +47,14 @@ async def track_response_time(request, call_next):
 
 
 # -------------------------------------------------
-# Request model
+# Request models
 # -------------------------------------------------
 class QueryRequest(BaseModel):
     question: str
+
+
+class ReportRequest(BaseModel):
+    topic: str
 
 
 # -------------------------------------------------
@@ -57,7 +69,7 @@ def home():
 
 
 # -------------------------------------------------
-# Query API with Cache + Meta Object
+# Query API with Cache + Meta
 # -------------------------------------------------
 @app.post("/query")
 def query_docs(request: QueryRequest):
@@ -67,9 +79,7 @@ def query_docs(request: QueryRequest):
     question = request.question
 
     # ---------------------------------------------
-    # Skip cache for fresh requests
-    # Example:
-    # no-cache: What is AI?
+    # Skip cache
     # ---------------------------------------------
     if should_skip_cache(question):
 
@@ -141,6 +151,76 @@ def query_docs(request: QueryRequest):
     set_cache(question, result)
 
     return result
+
+
+# -------------------------------------------------
+# Background report processing
+# -------------------------------------------------
+def process_report(job_id, topic):
+
+    jobs[job_id]["status"] = "processing"
+
+    # Simulate long AI task
+    time.sleep(5)
+
+    report = f"""
+AI Generated Report
+
+Topic: {topic}
+
+Summary:
+This report contains AI-generated insights about {topic}.
+"""
+
+    jobs[job_id]["status"] = "completed"
+
+    jobs[job_id]["report"] = report
+
+    # Simulated webhook
+    print(f"Webhook triggered for job {job_id}")
+
+
+# -------------------------------------------------
+# Generate report API
+# -------------------------------------------------
+@app.post("/generate-report")
+def generate_report(request: ReportRequest):
+
+    job_id = str(uuid.uuid4())
+
+    jobs[job_id] = {
+        "status": "queued",
+        "report": None
+    }
+
+    # Background thread
+    thread = threading.Thread(
+        target=process_report,
+        args=(job_id, request.topic)
+    )
+
+    thread.start()
+
+    return {
+        "message": "Report generation started",
+        "job_id": job_id,
+        "status": "queued"
+    }
+
+
+# -------------------------------------------------
+# Job status API
+# -------------------------------------------------
+@app.get("/job/{job_id}")
+def get_job_status(job_id: str):
+
+    if job_id not in jobs:
+
+        return {
+            "error": "Job not found"
+        }
+
+    return jobs[job_id]
 
 
 # -------------------------------------------------
