@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.chroma_client import collection, model
+from services.db import collection, model
 
 recommend_bp = Blueprint("recommend", __name__)
 
