@@ -275,3 +275,17 @@ Status: All Medium+ findings resolved.---
 | Safe Input | "There is a risk of data breach" | 200 Success | 200 Success (Text passed through cleanly) | **PASS** |
 
 **Sign-off:** All Week 1 security endpoints functioning as designed. Input sanitiser and rate limiter active.
+---
+
+## Day 7: OWASP ZAP Baseline Scan (Remediation Plan)
+*Note: ZAP GUI requires JRE 17 to execute. Preliminary manual analysis conducted against Flask endpoints based on baseline checks.*
+
+### Findings Categorized by Severity
+
+| Severity | Finding | Location | Remediation Plan | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Medium** | Missing X-Content-Type-Options Header | Flask AI Service (All responses) | Install lask-talisman in Python to auto-inject security headers. | Planned (Day 8) |
+| **Medium** | Missing X-Frame-Options Header | Flask AI Service (All responses) | Install lask-talisman in Python to prevent Clickjacking. | Planned (Day 8) |
+| **Low** | Information Disclosure (Server Version) | Flask AI Service (404 Error Pages) | Configure Flask pp.config['TESTING'] = True to hide server banner. | Planned (Day 12) |
+
+**Action Item:** Fix all Medium findings on Day 8 by implementing lask-talisman and re-scan to confirm zero Medium alerts.
