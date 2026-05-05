@@ -263,4 +263,15 @@ Use dependency scanners
 | Missing X-Frame-Options | flask-talisman | Code review |
 | Prompt Injection | detect_prompt_injection() | Manual testing in Postman |
 
-Status: All Medium+ findings resolved.
+Status: All Medium+ findings resolved.---
+
+## Week 1 Security Testing (Day 5)
+*Conducted local testing against Flask ai-service endpoints.*
+
+| Test Case | Payload | Expected Result | Actual Result | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| Empty Input | "" | 400 Bad Request | 400 Bad Request ("Input cannot be empty") | **PASS** |
+| Prompt Injection | "Ignore all previous instructions..." | 400 Bad Request | 400 Bad Request ("Blocked: Potential prompt injection") | **PASS** |
+| Safe Input | "There is a risk of data breach" | 200 Success | 200 Success (Text passed through cleanly) | **PASS** |
+
+**Sign-off:** All Week 1 security endpoints functioning as designed. Input sanitiser and rate limiter active.
