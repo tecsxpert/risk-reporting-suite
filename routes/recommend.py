@@ -1,7 +1,8 @@
-import json
 from flask import Blueprint, request, jsonify
 from services.llm_client import call_llm
+from services.rag_pipeline import search_docs
 from datetime import datetime
+import json
 
 recommend_bp = Blueprint("recommend", __name__)
 
@@ -13,34 +14,40 @@ def recommend():
     if not query:
         return jsonify({"error": "Missing 'query' field"}), 400
 
-    # Build prompt
+    # Step 1: Retrieve context
+    results = search_docs(query, n_results=3)
+    context_chunks = results["documents"][0]
+
+    # Step 2: Build prompt with context
     prompt = f"""
-    Based on the query: "{query}", generate 3 actionable recommendations.
-    Each recommendation must include:
-    - action_type (short label like 'monitor', 'hedge', 'alert')
-    - description (1–2 sentence explanation)
-    - priority (high, medium, low)
-    Return them as a valid JSON array only.
+    User query: "{query}"
+    Relevant context:
+    {context_chunks}
+
+    Generate 3 actionable recommendations.
+    Each must include:
+    - action_type
+    - description
+    - priority
+    Return as a valid JSON array only.
     """
 
-    # Call Groq
     raw_output = call_llm(prompt)
 
-    # Step 1a: Clean fenced output
+    # Step 3: Clean + parse JSON
     cleaned = raw_output.strip()
     if cleaned.startswith("```"):
-        cleaned = cleaned.split("```")[1]  # remove ```json
+        cleaned = cleaned.split("```")[1]
     cleaned = cleaned.replace("json", "").strip()
 
-    # Step 1b: Parse JSON safely
     try:
         recommendations = json.loads(cleaned)
     except Exception:
         recommendations = []
 
-    # Step 1c: Return structured JSON
     return jsonify({
         "query": query,
         "recommendations": recommendations,
+        "context_used": context_chunks,
         "generated_at": datetime.utcnow().isoformat()
     })
