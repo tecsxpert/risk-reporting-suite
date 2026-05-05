@@ -1,6 +1,5 @@
 import os
 from groq import Groq
-from services.prompts import PRIMARY_PROMPT
 
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
@@ -8,8 +7,7 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
-def call_llm(text: str) -> str:
-    prompt = PRIMARY_PROMPT.format(text=text)
+def call_llm(prompt: str) -> str:
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}]
