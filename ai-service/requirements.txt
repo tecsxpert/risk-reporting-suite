@@ -1,0 +1,2 @@
+﻿Flask==3.0.0
+flask-limiter==3.5.0
