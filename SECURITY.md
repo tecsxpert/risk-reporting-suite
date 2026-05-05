@@ -289,3 +289,25 @@ Status: All Medium+ findings resolved.---
 | **Low** | Information Disclosure (Server Version) | Flask AI Service (404 Error Pages) | Configure Flask pp.config['TESTING'] = True to hide server banner. | Planned (Day 12) |
 
 **Action Item:** Fix all Medium findings on Day 8 by implementing lask-talisman and re-scan to confirm zero Medium alerts.
+---
+
+## Day 9: PII (Personally Identifiable Information) Audit Policy
+*To prevent leaking user data to the Groq LLM or saving it in local logs, the following rules are strictly enforced:*
+
+1. **No Raw User Data in Prompts:** The Java backend must strip Names, Emails, Phone Numbers, and Account IDs before passing text to the AiServiceClient. Only the "Risk Description" should be sent to Groq.
+2. **No PII in Logs:** Python print() or pp.logger must NEVER log the full JSON payload received from Java. Only log the status and esponse_time.
+3. **Redis Cache Expiry:** All cached AI responses containing risk data MUST use a 15-minute TTL to prevent stale PII from sitting in memory indefinitely.
+
+## Day 10: Week 2 Security Sign-Off
+*Verification of implemented security controls.*
+
+| Control | Implementation | Verified By | Status |
+| :--- | :--- | :--- | :--- |
+| JWT Enforcement | Spring Security + JwtFilter (Java) | Code Review | Pending Java Dev |
+| Role-Based Access (RBAC) | @PreAuthorize on endpoints | Code Review | Pending Java Dev |
+| Input Sanitisation | Regex strip + Prompt block (Python) | Local Postman Test | **PASS** |
+| Rate Limiting | lask-limiter (30/min, 10/min) | Code Review | **PASS** |
+| Injection Rejection | SanitizationError returns 400 | Local Postman Test | **PASS** |
+| Security Headers | lask-talisman added | Code Review | **PASS** |
+
+**Week 2 Status:** All Python-side security controls are complete and verified. Waiting on Java backend integration for final end-to-end JWT testing.
