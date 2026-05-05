@@ -311,3 +311,18 @@ Status: All Medium+ findings resolved.---
 | Security Headers | lask-talisman added | Code Review | **PASS** |
 
 **Week 2 Status:** All Python-side security controls are complete and verified. Waiting on Java backend integration for final end-to-end JWT testing.
+---
+
+## Day 11 & 12: Week 3 Advanced Hardening & Performance
+
+### Active Scan Strategy (Pending Java Integration)
+*Note: A full ZAP Active Scan requires the complete Docker stack (Java + PostgreSQL + Redis + Python). This will be executed on Day 13 once the Java team completes the Docker-Compose setup.*
+* **Target 1:** http://localhost:8080/api/* (Java CRUD endpoints - will test for IDOR, Mass Assignment).
+* **Target 2:** http://localhost:5000/* (Python AI endpoints - will test for AI prompt bypasses).
+
+### Performance & Security Optimization Applied
+1. **Connection Timeouts:** AiServiceClient.java enforces a strict 5s connect / 10s read timeout. If the AI hangs, Java fails gracefully and returns 
+ull instead of freezing the user's screen.
+2. **Rate Limit Optimization:** /generate-report is restricted to 10 req/min to protect the free-tier Groq API from exhaustion.
+3. **Fail-Safe AI Responses:** As per the common mistakes guide, the Java service is instructed to handle 
+ull from the AI client by returning a fallback template {is_fallback: true} rather than throwing a 500 error to the frontend.
