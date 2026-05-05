@@ -1,12 +1,15 @@
 ﻿from flask import Flask, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 from services.sanitizer import sanitize_input, SanitizationError
 
 app = Flask(__name__)
 
-# DAY 4 TASK: Setup rate limiter (Default: 30 req/min globally)
-# get_remote_address tracks users by their IP address
+# DAY 8 FIX: Add security headers automatically (Fixes ZAP Medium findings)
+Talisman(app, force_https=False)
+
+# Setup rate limiter (Default: 30 req/min globally)
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
@@ -15,7 +18,6 @@ limiter = Limiter(
 
 @app.route('/describe', methods=['POST'])
 def describe_risk():
-    # This endpoint uses the default 30 req/min limit
     data = request.get_json()
     user_text = data.get('text', '')
     try:
@@ -24,7 +26,6 @@ def describe_risk():
     except SanitizationError as e:
         return jsonify({"error": str(e)}), 400
 
-# DAY 4 TASK: Strict limit on heavy endpoint (10 req/min)
 @app.route('/generate-report', methods=['POST'])
 @limiter.limit("10 per minute") 
 def generate_report():
@@ -32,7 +33,6 @@ def generate_report():
     user_text = data.get('text', '')
     try:
         safe_text = sanitize_input(user_text)
-        # Placeholder for actual report generation
         return jsonify({"status": "success", "message": "Report generation started"}), 200
     except SanitizationError as e:
         return jsonify({"error": str(e)}), 400
