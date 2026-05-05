@@ -30,7 +30,7 @@ jobs = {}
 
 
 # -------------------------------------------------
-# Middleware: Track API response time
+# Middleware: Track response time
 # -------------------------------------------------
 @app.middleware("http")
 async def track_response_time(request, call_next):
@@ -69,7 +69,7 @@ def home():
 
 
 # -------------------------------------------------
-# Query API with Cache + Meta
+# Query API
 # -------------------------------------------------
 @app.post("/query")
 def query_docs(request: QueryRequest):
@@ -78,9 +78,9 @@ def query_docs(request: QueryRequest):
 
     question = request.question
 
-    # ---------------------------------------------
-    # Skip cache
-    # ---------------------------------------------
+    # -------------------------------------------------
+    # Skip cache logic
+    # -------------------------------------------------
     if should_skip_cache(question):
 
         context, sources = retrieve_context(question)
@@ -103,13 +103,17 @@ def query_docs(request: QueryRequest):
                 "model_used": "llama3-8b-8192",
                 "tokens_used": groq_meta.get("tokens_used", 0),
                 "response_time_ms": response_time,
-                "cached": False
+                "cached": False,
+                "is_fallback": groq_meta.get(
+                    "is_fallback",
+                    False
+                )
             }
         }
 
-    # ---------------------------------------------
+    # -------------------------------------------------
     # Check cache
-    # ---------------------------------------------
+    # -------------------------------------------------
     cached_result = get_cache(question)
 
     if cached_result:
@@ -118,9 +122,9 @@ def query_docs(request: QueryRequest):
 
         return cached_result
 
-    # ---------------------------------------------
+    # -------------------------------------------------
     # Generate fresh response
-    # ---------------------------------------------
+    # -------------------------------------------------
     context, sources = retrieve_context(question)
 
     answer, groq_meta = groq_client.generate_answer(
@@ -141,13 +145,17 @@ def query_docs(request: QueryRequest):
             "model_used": "llama3-8b-8192",
             "tokens_used": groq_meta.get("tokens_used", 0),
             "response_time_ms": response_time,
-            "cached": False
+            "cached": False,
+            "is_fallback": groq_meta.get(
+                "is_fallback",
+                False
+            )
         }
     }
 
-    # ---------------------------------------------
-    # Save in cache
-    # ---------------------------------------------
+    # -------------------------------------------------
+    # Save cache
+    # -------------------------------------------------
     set_cache(question, result)
 
     return result
@@ -160,7 +168,6 @@ def process_report(job_id, topic):
 
     jobs[job_id]["status"] = "processing"
 
-    # Simulate long AI task
     time.sleep(5)
 
     report = f"""
@@ -193,7 +200,6 @@ def generate_report(request: ReportRequest):
         "report": None
     }
 
-    # Background thread
     thread = threading.Thread(
         target=process_report,
         args=(job_id, request.topic)
@@ -224,7 +230,7 @@ def get_job_status(job_id: str):
 
 
 # -------------------------------------------------
-# Health Monitoring API
+# Health API
 # -------------------------------------------------
 @app.get("/health")
 def health():
