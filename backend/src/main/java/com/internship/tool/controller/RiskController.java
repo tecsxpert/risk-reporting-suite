@@ -1,40 +1,49 @@
 package com.internship.tool.controller;
 
-import com.internship.tool.entity.Risk;
-import com.internship.tool.service.RiskService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.internship.tool.dto.RiskDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/risks")
+@RequestMapping("/risks")
 public class RiskController {
 
-    @Autowired
-    private RiskService riskService;
+    private List<RiskDTO> list = new ArrayList<>();
 
-    // GET all risks
+    @Operation(summary = "Get all risks")
+    @ApiResponse(responseCode = "200", description = "Fetched successfully")
     @GetMapping
-    public List<Risk> getAllRisks() {
-        return riskService.getAllRisks();
+    public List<RiskDTO> getAll() {
+        return list;
     }
 
-    // POST new risk
+    @Operation(summary = "Add risk")
+    @ApiResponse(responseCode = "200", description = "Risk added")
     @PostMapping
-    public Risk addRisk(@RequestBody Risk risk) {
-        return riskService.addRisk(risk);
+    public RiskDTO add(@RequestBody RiskDTO dto) {
+        list.add(dto);
+        return dto;
     }
 
-    // GET risk by ID
+    @Operation(summary = "Get risk by ID")
+    @ApiResponse(responseCode = "200", description = "Risk found")
     @GetMapping("/{id}")
-    public Risk getRiskById(@PathVariable Long id) {
-        return riskService.getRiskById(id);
+    public RiskDTO get(@PathVariable Long id) {
+        return list.stream()
+                .filter(r -> r.getId().equals(id))
+                .findFirst()
+                .orElse(null);
     }
 
-    // DELETE risk
+    @Operation(summary = "Delete risk")
+    @ApiResponse(responseCode = "200", description = "Risk deleted")
     @DeleteMapping("/{id}")
-    public String deleteRisk(@PathVariable Long id) {
-        return riskService.deleteRisk(id);
+    public String delete(@PathVariable Long id) {
+        list.removeIf(r -> r.getId().equals(id));
+        return "Deleted";
     }
 }

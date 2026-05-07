@@ -1,43 +1,45 @@
-package com.internship.tool.controller;
+package com.internship.tool.config;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-@RestController
-public class AuthController {
+import java.io.IOException;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+@Component
+public class AuthController extends OncePerRequestFilter {
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
 
-    // POST /auth/register
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "Username already exists"));
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        if (user.getRole() == null || user.getRole().isEmpty()) { user.setRole("VIEWER"); }
-        userRepository.save(user);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("message", "User registered successfully"));
+        String path = request.getServletPath();
+
+        return path.startsWith("/api/auth") ||
+               path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.contains("swagger");
     }
 
-    // POST /auth/login
-    @PostMapping("/login")
-    public Map<String, String> login(@RequestBody Map<String, String> body) {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String username = body.get("username");
-        String password = body.get("password");
+        String header = request.getHeader("Authorization");
 
-        if ("admin".equals(username) && "admin".equals(password)) {
-            String token = jwtUtil.generateToken(username);
-            return Map.of("token", token);
+        // IMPORTANT FIX
+        if (header == null || !header.startsWith("Bearer ")) {
+
+            // allow request without token
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        throw new RuntimeException("Invalid credentials");
+        // token validation later
+        filterChain.doFilter(request, response);
     }
 }
