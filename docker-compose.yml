@@ -5,33 +5,52 @@ services:
   app:
     build:
       context: ./backend
+
     container_name: risk-app
+
     ports:
       - "8080:8080"
+
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/riskdb
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_REDIS_HOST: redis
 
+    restart: on-failure
+
   db:
     image: mysql:8
+
     container_name: risk-db
+
     restart: always
+
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: riskdb
+
     ports:
       - "3307:3306"
+
     volumes:
       - db_data:/var/lib/mysql
 
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:latest
+
     container_name: risk-redis
+
     ports:
       - "6379:6379"
 
