@@ -1,79 +1,39 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    container_name: risk-db
-    environment:
-      POSTGRES_DB: riskdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+
+  app:
+    build:
+      context: ./backend
+    container_name: risk-app
     ports:
-      - "5432:5432"
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/riskdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_REDIS_HOST: redis
+
+  db:
+    image: mysql:8
+    container_name: risk-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: riskdb
+    ports:
+      - "3307:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - db_data:/var/lib/mysql
 
   redis:
-    image: redis:7
+    image: redis:latest
     container_name: risk-redis
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build: ./backend
-    container_name: risk-backend
-    ports:
-      - "8080:8080"
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/riskdb
-      DB_USERNAME: postgres
-      DB_PASSWORD: password
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  ai-service:
-    build: ./ai-service
-    container_name: risk-ai
-    ports:
-      - "5000:5000"
-    environment:
-      GROQ_API_KEY: ${GROQ_API_KEY}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  frontend:
-    build: ./frontend
-    container_name: risk-frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
 volumes:
-  postgres_data:
+  db_data:
