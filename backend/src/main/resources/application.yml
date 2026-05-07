@@ -1,17 +1,19 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3307/riskdb
+    url: jdbc:mysql://risk-db:3306/riskdb
     username: root
     password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
+
     show-sql: true
 
-  redis:
-    host: localhost
-    port: 6379
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
 
 server:
   port: 8080

@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY target/risk-reporting-suite-1.0.0.jar app.jar
 
 EXPOSE 8080
 
