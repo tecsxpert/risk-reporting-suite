@@ -7,6 +7,9 @@ from urllib.parse import quote_plus
 import os
 from dotenv import load_dotenv
 import bcrypt
+import jwt
+import datetime
+from functools import wraps
 
 # ==============================
 # Load Environment Variables
@@ -18,6 +21,9 @@ load_dotenv()
 # ==============================
 app = Flask(__name__)
 CORS(app)
+
+# Secret Key for JWT
+app.config['SECRET_KEY'] = 'supersecretkey'
 
 # ==============================
 # MongoDB Connection
@@ -50,6 +56,7 @@ def detect_sql_injection(user_input):
 
 # Calculate Risk
 def calculate_risk(user_input):
+
     text = user_input.lower()
 
     high_risk_keywords = [
@@ -87,6 +94,7 @@ def calculate_risk(user_input):
 
 # Risk Score
 def risk_score(risk_level):
+
     scores = {
         "HIGH": 90,
         "MEDIUM": 60,
@@ -97,12 +105,67 @@ def risk_score(risk_level):
 
 # Analysis Message
 def generate_analysis(risk_level):
+
     if risk_level == "HIGH":
         return "⚠️ High risk detected. Possible fraud or security threat."
+
     elif risk_level == "MEDIUM":
         return "⚠️ Medium risk detected. Suspicious activity found."
+
     else:
         return "✅ Low risk detected. System appears safe."
+
+# ==============================
+# JWT TOKEN FUNCTIONS
+# ==============================
+
+# Generate Token
+def generate_token(username):
+
+    payload = {
+        "username": username,
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }
+
+    token = jwt.encode(
+        payload,
+        app.config['SECRET_KEY'],
+        algorithm="HS256"
+    )
+
+    return token
+
+# Token Verification
+def token_required(f):
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+
+        token = None
+
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization']
+
+        if not token:
+            return jsonify({
+                "error": "Token is missing"
+            }), 401
+
+        try:
+            jwt.decode(
+                token,
+                app.config['SECRET_KEY'],
+                algorithms=["HS256"]
+            )
+
+        except:
+            return jsonify({
+                "error": "Invalid or expired token"
+            }), 401
+
+        return f(*args, **kwargs)
+
+    return decorated
 
 # ==============================
 # Routes
@@ -111,6 +174,7 @@ def generate_analysis(risk_level):
 # Home Route
 @app.route('/')
 def home():
+
     return "Risk Reporting API is running successfully!"
 
 # ==============================
@@ -120,6 +184,7 @@ def home():
 def analyze():
 
     try:
+
         data = request.get_json()
 
         if not data or "input" not in data:
@@ -172,17 +237,20 @@ def analyze():
         return jsonify(response), 200
 
     except Exception as e:
+
         return jsonify({
             "error": str(e)
         }), 500
 
 # ==============================
-# Reports History Route
+# Reports Route (Protected)
 # ==============================
 @app.route('/reports', methods=['GET'])
+@token_required
 def get_reports():
 
     try:
+
         reports = []
 
         for report in reports_collection.find({}, {"_id": 0}):
@@ -191,6 +259,7 @@ def get_reports():
         return jsonify(reports), 200
 
     except Exception as e:
+
         return jsonify({
             "error": str(e)
         }), 500
@@ -202,12 +271,14 @@ def get_reports():
 def register():
 
     try:
+
         data = request.get_json()
 
         username = data.get("username")
         password = data.get("password")
 
         if not username or not password:
+
             return jsonify({
                 "error": "Username and password required"
             }), 400
@@ -217,6 +288,7 @@ def register():
         })
 
         if existing_user:
+
             return jsonify({
                 "error": "User already exists"
             }), 400
@@ -236,6 +308,7 @@ def register():
         }), 201
 
     except Exception as e:
+
         return jsonify({
             "error": str(e)
         }), 500
@@ -247,6 +320,7 @@ def register():
 def login():
 
     try:
+
         data = request.get_json()
 
         username = data.get("username")
@@ -257,6 +331,7 @@ def login():
         })
 
         if not user:
+
             return jsonify({
                 "error": "Invalid username"
             }), 401
@@ -266,8 +341,11 @@ def login():
             user["password"]
         ):
 
+            token = generate_token(username)
+
             return jsonify({
-                "message": "Login successful"
+                "message": "Login successful",
+                "token": token
             }), 200
 
         return jsonify({
@@ -275,6 +353,7 @@ def login():
         }), 401
 
     except Exception as e:
+
         return jsonify({
             "error": str(e)
         }), 500
@@ -289,5 +368,5 @@ if __name__ == '__main__':
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=True
+        debug=False
     )
