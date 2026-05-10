@@ -154,3 +154,4 @@ websocket-client==1.8.0
 Werkzeug==3.1.8
 widgetsnbextension==4.0.13
 wrapt==2.1.2
+pymongo
