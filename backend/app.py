@@ -22,7 +22,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Secret Key for JWT
+# Secret Key
 app.config['SECRET_KEY'] = 'supersecretkey'
 
 # ==============================
@@ -51,7 +51,9 @@ def sanitize_input(user_input):
 
 # Detect SQL Injection
 def detect_sql_injection(user_input):
+
     pattern = r"(select|insert|update|delete|drop|--|;|union|xp_)"
+
     return re.search(pattern, user_input.lower())
 
 # Calculate Risk
@@ -103,7 +105,7 @@ def risk_score(risk_level):
 
     return scores.get(risk_level, 0)
 
-# Analysis Message
+# Generate Analysis
 def generate_analysis(risk_level):
 
     if risk_level == "HIGH":
@@ -116,10 +118,10 @@ def generate_analysis(risk_level):
         return "✅ Low risk detected. System appears safe."
 
 # ==============================
-# JWT TOKEN FUNCTIONS
+# JWT FUNCTIONS
 # ==============================
 
-# Generate Token
+# Generate JWT Token
 def generate_token(username):
 
     payload = {
@@ -143,27 +145,35 @@ def token_required(f):
 
         token = None
 
+        # Read Token
         if 'Authorization' in request.headers:
             token = request.headers['Authorization']
 
+        # No Token
         if not token:
+
             return jsonify({
                 "error": "Token is missing"
             }), 401
 
         try:
-            jwt.decode(
+
+            # Decode Token
+            data = jwt.decode(
                 token,
                 app.config['SECRET_KEY'],
                 algorithms=["HS256"]
             )
 
+            current_user = data['username']
+
         except:
+
             return jsonify({
                 "error": "Invalid or expired token"
             }), 401
 
-        return f(*args, **kwargs)
+        return f(current_user, *args, **kwargs)
 
     return decorated
 
@@ -178,16 +188,18 @@ def home():
     return "Risk Reporting API is running successfully!"
 
 # ==============================
-# Analyze Route
+# Analyze Route (Protected)
 # ==============================
 @app.route('/analyze', methods=['POST'])
-def analyze():
+@token_required
+def analyze(current_user):
 
     try:
 
         data = request.get_json()
 
         if not data or "input" not in data:
+
             return jsonify({
                 "error": "No input provided"
             }), 400
@@ -196,18 +208,21 @@ def analyze():
 
         # Input Length Check
         if len(user_input) > 500:
+
             return jsonify({
                 "error": "Input too long"
             }), 400
 
         # Script Detection
         if "<script>" in user_input.lower():
+
             return jsonify({
                 "error": "Malicious script detected"
             }), 400
 
         # SQL Injection Detection
         if detect_sql_injection(user_input):
+
             return jsonify({
                 "error": "SQL injection pattern detected"
             }), 400
@@ -218,12 +233,15 @@ def analyze():
         # Risk Logic
         risk_level = calculate_risk(user_input)
 
-        # Score + Analysis
+        # Score
         score = risk_score(risk_level)
+
+        # Analysis
         analysis = generate_analysis(risk_level)
 
         # Response Object
         response = {
+            "username": current_user,
             "original_input": user_input,
             "sanitized_input": clean_input,
             "risk_level": risk_level,
@@ -247,13 +265,17 @@ def analyze():
 # ==============================
 @app.route('/reports', methods=['GET'])
 @token_required
-def get_reports():
+def get_reports(current_user):
 
     try:
 
         reports = []
 
-        for report in reports_collection.find({}, {"_id": 0}):
+        for report in reports_collection.find(
+            {"username": current_user},
+            {"_id": 0}
+        ):
+
             reports.append(report)
 
         return jsonify(reports), 200
@@ -265,7 +287,7 @@ def get_reports():
         }), 500
 
 # ==============================
-# Register User
+# Register Route
 # ==============================
 @app.route('/register', methods=['POST'])
 def register():
@@ -293,11 +315,13 @@ def register():
                 "error": "User already exists"
             }), 400
 
+        # Hash Password
         hashed_password = bcrypt.hashpw(
             password.encode('utf-8'),
             bcrypt.gensalt()
         )
 
+        # Save User
         users_collection.insert_one({
             "username": username,
             "password": hashed_password
@@ -314,7 +338,7 @@ def register():
         }), 500
 
 # ==============================
-# Login User
+# Login Route
 # ==============================
 @app.route('/login', methods=['POST'])
 def login():
@@ -330,12 +354,14 @@ def login():
             "username": username
         })
 
+        # User Not Found
         if not user:
 
             return jsonify({
                 "error": "Invalid username"
             }), 401
 
+        # Password Check
         if bcrypt.checkpw(
             password.encode('utf-8'),
             user["password"]
