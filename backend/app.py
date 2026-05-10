@@ -15,7 +15,7 @@ CORS(app)
 username = quote_plus(os.getenv("MONGO_USERNAME", "ApoorvaBiradar"))
 password = quote_plus(os.getenv("MONGO_PASSWORD", "appu@1214"))
 
-MONGO_URI = f"mongodb+srv://{username}:{password}@cluster0.dpebjbj.mongodb.net/?appName=Cluster0"
+MONGO_URI = f"mongodb+srv://{username}:{password}@cluster0.dpebjbj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 client = MongoClient(MONGO_URI)
 
@@ -23,29 +23,40 @@ db = client["risk_reporting_db"]
 collection = db["reports"]
 
 
+# Sanitize Input
 def sanitize_input(user_input):
     return bleach.clean(user_input)
 
-
+# Detect SQL Injection
 def detect_sql_injection(user_input):
     pattern = r"(select|insert|update|delete|drop|--|;|union|xp_)"
     return re.search(pattern, user_input.lower())
 
-
+# Calculate Risk
 def calculate_risk(user_input):
     text = user_input.lower()
 
     high_risk_keywords = [
-        "fraud", "attack", "hack",
-        "unauthorized", "phishing",
-        "password leak", "credit card",
-        "bank details", "otp", "ssn"
+        "fraud",
+        "attack",
+        "hack",
+        "unauthorized",
+        "phishing",
+        "password leak",
+        "credit card",
+        "bank details",
+        "otp",
+        "ssn",
+        "breach"
     ]
 
     medium_risk_keywords = [
-        "error", "warning",
-        "suspicious", "unknown login",
-        "failed attempt"
+        "error",
+        "warning",
+        "suspicious",
+        "unknown login",
+        "failed attempt",
+        "alert"
     ]
 
     for word in high_risk_keywords:
@@ -57,6 +68,24 @@ def calculate_risk(user_input):
             return "MEDIUM"
 
     return "LOW"
+
+# Risk Score
+def risk_score(risk_level):
+    scores = {
+        "HIGH": 90,
+        "MEDIUM": 60,
+        "LOW": 20
+    }
+    return scores.get(risk_level, 0)
+
+# Analysis Message
+def generate_analysis(risk_level):
+    if risk_level == "HIGH":
+        return "⚠️ High risk detected. Possible fraud or security threat."
+    elif risk_level == "MEDIUM":
+        return "⚠️ Medium risk detected. Suspicious activity found."
+    else:
+        return "✅ Low risk detected. System appears safe."
 
 
 @app.route('/')
@@ -85,15 +114,19 @@ def analyze():
 
         clean_input = sanitize_input(user_input)
         risk_level = calculate_risk(user_input)
+        score = risk_score(risk_level)
+        analysis = generate_analysis(risk_level)
 
         response = {
             "original_input": user_input,
             "sanitized_input": clean_input,
             "risk_level": risk_level,
-            "analysis": f"{risk_level} risk detected based on input analysis"
+            "score": score,
+            "analysis": analysis
         }
 
-        collection.insert_one({**response})
+        collection.insert_one(response)
+        response.pop("_id", None)  # ✅ Fix: remove ObjectId added by MongoDB
 
         return jsonify(response), 200
 
@@ -101,5 +134,20 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/reports', methods=['GET'])
+def get_reports():
+    try:
+        reports = []
+
+        for report in collection.find({}, {"_id": 0}):
+            reports.append(report)
+
+        return jsonify(reports), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
