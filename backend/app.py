@@ -6,12 +6,22 @@ from pymongo import MongoClient
 from urllib.parse import quote_plus
 import os
 from dotenv import load_dotenv
+import bcrypt
 
+# ==============================
+# Load Environment Variables
+# ==============================
 load_dotenv()
 
+# ==============================
+# Flask App Setup
+# ==============================
 app = Flask(__name__)
 CORS(app)
 
+# ==============================
+# MongoDB Connection
+# ==============================
 username = quote_plus(os.getenv("MONGO_USERNAME", "ApoorvaBiradar"))
 password = quote_plus(os.getenv("MONGO_PASSWORD", "appu@1214"))
 
@@ -20,8 +30,14 @@ MONGO_URI = f"mongodb+srv://{username}:{password}@cluster0.dpebjbj.mongodb.net/?
 client = MongoClient(MONGO_URI)
 
 db = client["risk_reporting_db"]
-collection = db["reports"]
 
+# Collections
+reports_collection = db["reports"]
+users_collection = db["users"]
+
+# ==============================
+# Helper Functions
+# ==============================
 
 # Sanitize Input
 def sanitize_input(user_input):
@@ -76,6 +92,7 @@ def risk_score(risk_level):
         "MEDIUM": 60,
         "LOW": 20
     }
+
     return scores.get(risk_level, 0)
 
 # Analysis Message
@@ -87,36 +104,60 @@ def generate_analysis(risk_level):
     else:
         return "✅ Low risk detected. System appears safe."
 
+# ==============================
+# Routes
+# ==============================
 
+# Home Route
 @app.route('/')
 def home():
     return "Risk Reporting API is running successfully!"
 
-
+# ==============================
+# Analyze Route
+# ==============================
 @app.route('/analyze', methods=['POST'])
 def analyze():
+
     try:
         data = request.get_json()
 
         if not data or "input" not in data:
-            return jsonify({"error": "No input provided"}), 400
+            return jsonify({
+                "error": "No input provided"
+            }), 400
 
         user_input = data["input"]
 
+        # Input Length Check
         if len(user_input) > 500:
-            return jsonify({"error": "Input too long"}), 400
+            return jsonify({
+                "error": "Input too long"
+            }), 400
 
+        # Script Detection
         if "<script>" in user_input.lower():
-            return jsonify({"error": "Malicious script detected"}), 400
+            return jsonify({
+                "error": "Malicious script detected"
+            }), 400
 
+        # SQL Injection Detection
         if detect_sql_injection(user_input):
-            return jsonify({"error": "SQL injection pattern detected"}), 400
+            return jsonify({
+                "error": "SQL injection pattern detected"
+            }), 400
 
+        # Sanitize Input
         clean_input = sanitize_input(user_input)
+
+        # Risk Logic
         risk_level = calculate_risk(user_input)
+
+        # Score + Analysis
         score = risk_score(risk_level)
         analysis = generate_analysis(risk_level)
 
+        # Response Object
         response = {
             "original_input": user_input,
             "sanitized_input": clean_input,
@@ -125,29 +166,128 @@ def analyze():
             "analysis": analysis
         }
 
-        collection.insert_one(response)
-        response.pop("_id", None)  # ✅ Fix: remove ObjectId added by MongoDB
+        # Save Report
+        reports_collection.insert_one(response)
 
         return jsonify(response), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e)
+        }), 500
 
-
+# ==============================
+# Reports History Route
+# ==============================
 @app.route('/reports', methods=['GET'])
 def get_reports():
+
     try:
         reports = []
 
-        for report in collection.find({}, {"_id": 0}):
+        for report in reports_collection.find({}, {"_id": 0}):
             reports.append(report)
 
         return jsonify(reports), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e)
+        }), 500
 
+# ==============================
+# Register User
+# ==============================
+@app.route('/register', methods=['POST'])
+def register():
 
+    try:
+        data = request.get_json()
+
+        username = data.get("username")
+        password = data.get("password")
+
+        if not username or not password:
+            return jsonify({
+                "error": "Username and password required"
+            }), 400
+
+        existing_user = users_collection.find_one({
+            "username": username
+        })
+
+        if existing_user:
+            return jsonify({
+                "error": "User already exists"
+            }), 400
+
+        hashed_password = bcrypt.hashpw(
+            password.encode('utf-8'),
+            bcrypt.gensalt()
+        )
+
+        users_collection.insert_one({
+            "username": username,
+            "password": hashed_password
+        })
+
+        return jsonify({
+            "message": "User registered successfully"
+        }), 201
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+# ==============================
+# Login User
+# ==============================
+@app.route('/login', methods=['POST'])
+def login():
+
+    try:
+        data = request.get_json()
+
+        username = data.get("username")
+        password = data.get("password")
+
+        user = users_collection.find_one({
+            "username": username
+        })
+
+        if not user:
+            return jsonify({
+                "error": "Invalid username"
+            }), 401
+
+        if bcrypt.checkpw(
+            password.encode('utf-8'),
+            user["password"]
+        ):
+
+            return jsonify({
+                "message": "Login successful"
+            }), 200
+
+        return jsonify({
+            "error": "Invalid password"
+        }), 401
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+# ==============================
+# Run App
+# ==============================
 if __name__ == '__main__':
+
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=True
+    )
